@@ -3,7 +3,7 @@ package webserver
 import (
 	"context"
 	"fmt"
-	"io"
+	"log"
 	"net/http"
 	"time"
 )
@@ -11,8 +11,9 @@ import (
 // Opts is a ftpdt options
 type Opts struct {
 	Port        uint
+	Host        string
 	DataStorage DataStorage //data storage
-	LogWriter   io.Writer   //Where log will be written to (default to stdout)
+	Logger      *log.Logger //Where log will be written to (default to stdout)
 }
 
 type DataStorage interface {
@@ -21,21 +22,21 @@ type DataStorage interface {
 }
 
 type WebServer struct {
-	logWriter io.Writer
-	ds        DataStorage
-	port      uint
-	server    *http.Server
+	logger *log.Logger
+	ds     DataStorage
+	port   uint
+	server *http.Server
 }
 
 func New(o Opts) *WebServer {
 	var mux http.ServeMux
 
 	s := &WebServer{
-		o.LogWriter,
+		o.Logger,
 		o.DataStorage,
 		o.Port,
 		&http.Server{
-			Addr:    fmt.Sprintf(":%d", o.Port),
+			Addr:    fmt.Sprintf("%s:%d", o.Host, o.Port),
 			Handler: &mux,
 		},
 	}
@@ -45,14 +46,17 @@ func New(o Opts) *WebServer {
 }
 
 func (s *WebServer) Run() error {
+	s.logger.Printf("Starting the web server at %s", s.server.Addr)
 	return s.server.ListenAndServe()
 }
 
 func (s *WebServer) reg(res http.ResponseWriter, req *http.Request) {
+	s.logger.Printf("New reg request")
 	_, _ = fmt.Fprint(res, "The TEST")
 }
 
 func (s *WebServer) Shutdown() {
 	ctx := context.Background()
+	s.logger.Printf("Shutting down the web server")
 	_ = s.server.Shutdown(ctx)
 }

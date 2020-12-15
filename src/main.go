@@ -15,8 +15,20 @@ import (
 
 func main() {
 
-	ts := tmplstorage.New("/")
+	config, err := LoadConfig()
+	if err != nil {
+		panic(err)
+	}
+
+	loggerFtp := logInit(config.Logs.Ftp, !config.Logs.FtpNoConsole)
+	loggerHttp := logInit(config.Logs.Http, !config.Logs.HttpNoConsole)
+	logger := logInit(config.Logs.Ftpdts, !config.Logs.FtpdtsNoConsole)
+
+	ts := tmplstorage.New(config.Templates.Path)
+
+	datastorage.DefaultCacheTTL = time.Second * time.Duration(config.Cache.DataTTL)
 	ds := datastorage.NewMemoryDataStorage()
+
 	ug := uidgenerator.New(
 		&uidgenerator.Cfg{
 			Alfa:      "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -26,8 +38,8 @@ func main() {
 	)
 
 	ftpOpts := &core.ServerOpts{
-		Port:     2000,
-		Hostname: "127.0.0.1",
+		Port:     int(config.Ftp.Port),
+		Hostname: config.Ftp.Host,
 	}
 
 	ftpd := ftpdt.New(
@@ -36,17 +48,19 @@ func main() {
 			TemplateStorage: ts,
 			DataStorage:     ds,
 			UidGenerator:    ug,
-			LogFtpDebug:     true,
+			LogWriter:       loggerFtp.Writer(),
+			LogFtpDebug:     false,
 		},
 	)
 
 	webServer := webserver.New(webserver.Opts{
-		Port:        2001,
+		Port:        config.Http.Port,
+		Host:        config.Http.Host,
 		DataStorage: ds,
-		LogWriter:   os.Stdout,
+		Logger:      loggerHttp,
 	})
 
-	err := ServiceStartup(ftpd.ListenAndServe, time.Millisecond*500)
+	err = ServiceStartup(ftpd.ListenAndServe, time.Millisecond*500)
 	if err != nil {
 		panic(fmt.Errorf("Can't start ftp server: %v", err))
 	}
@@ -66,8 +80,9 @@ func main() {
 		nil,
 	)
 
-	fmt.Printf("Data has been stored into the storage with uid: %s", uid)
+	logger.Printf("Data has been stored into the storage with uid: %s", uid)
 
+	//waiting for the stop signal
 	ch := make(chan os.Signal)
 	signal.Notify(ch, os.Interrupt, os.Kill)
 	select {
