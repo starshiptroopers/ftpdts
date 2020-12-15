@@ -16,8 +16,9 @@ var (
 
 type Config struct {
 	Http struct {
-		Port uint   `default:"2001"`
-		Host string `default:"127.0.0.1"`
+		Port           uint   `default:"2001"`
+		Host           string `default:"127.0.0.1"`
+		MaxRequestBody int64  `default:"1024"`
 	}
 
 	Ftp struct {

@@ -1,19 +1,43 @@
 package webserver
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
+	"errors"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"time"
 )
 
+type Response struct {
+	Code    uint        `json:"code"`
+	Message string      `json:"message"`
+	Data    interface{} `json:"data"`
+}
+
+type DataGetResponse struct {
+	Response
+	CreatedAt time.Time `json:"createdAt"`
+}
+
+type DataPostResponse struct {
+	Response
+	Uid string `json:"uid"`
+}
+
+var errNFound = Response{10, "Not found", nil}
+
 // Opts is a ftpdt options
 type Opts struct {
-	Port        uint
-	Host        string
-	DataStorage DataStorage //data storage
-	Logger      *log.Logger //Where log will be written to (default to stdout)
+	Port           uint
+	Host           string
+	MaxRequestBody int64
+	DataStorage    DataStorage //data storage
+	UidGenerator   UID
+	Logger         *log.Logger //Where log will be written to (default to stdout)
 }
 
 type DataStorage interface {
@@ -21,11 +45,20 @@ type DataStorage interface {
 	Put(uid string, payload interface{}, ttl *time.Duration) error
 }
 
+//UID validator
+type UID interface {
+	//searching the UID in the string
+	Validate(string) (string, error)
+	New() string
+}
+
 type WebServer struct {
-	logger *log.Logger
-	ds     DataStorage
-	port   uint
-	server *http.Server
+	logger         *log.Logger
+	ds             DataStorage
+	port           uint
+	maxRequestBody int64
+	uidGenerator   UID
+	server         *http.Server
 }
 
 func New(o Opts) *WebServer {
@@ -35,12 +68,14 @@ func New(o Opts) *WebServer {
 		o.Logger,
 		o.DataStorage,
 		o.Port,
+		o.MaxRequestBody,
+		o.UidGenerator,
 		&http.Server{
 			Addr:    fmt.Sprintf("%s:%d", o.Host, o.Port),
 			Handler: &mux,
 		},
 	}
-	mux.HandleFunc("/reg", s.reg)
+	mux.HandleFunc("/data", s.dataRequest)
 
 	return s
 }
@@ -50,13 +85,100 @@ func (s *WebServer) Run() error {
 	return s.server.ListenAndServe()
 }
 
-func (s *WebServer) reg(res http.ResponseWriter, req *http.Request) {
-	s.logger.Printf("New reg request")
-	_, _ = fmt.Fprint(res, "The TEST")
+func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
+
+	res.Header().Set("Content-Type", "application/json")
+	if req.Method == http.MethodPost {
+		if res.Header().Get("Content-type") != "application/json" {
+			http.Error(res, "Wrong content-type (not a json)", http.StatusBadRequest)
+			return
+		}
+		var d interface{}
+		err := s.readBodyAsJson(req, d)
+		if err != nil {
+			http.Error(res, "Wrong request data", http.StatusBadRequest)
+			return
+		}
+
+		//store data
+		uid := s.uidGenerator.New()
+		err = s.ds.Put(uid, d, nil)
+		if err != nil {
+			s.logger.Printf("Can't store data into the datastorage: %v", err)
+			http.Error(res, "Internal error", http.StatusInternalServerError)
+			return
+		}
+		_, _ = res.Write(s.jsonResponse(DataPostResponse{Response{0, "OK", nil}, uid}))
+		s.logger.Printf("New data has been stored into the storage with uid %s", uid)
+		return
+	}
+
+	if req.Method == http.MethodGet {
+		uid := req.FormValue("uid")
+		if uid == "" {
+			_, _ = res.Write(s.jsonResponse(errNFound))
+			return
+		}
+
+		d, c, err := s.ds.Get(uid)
+		if err != nil {
+			_, _ = res.Write(s.jsonResponse(errNFound))
+			return
+		}
+
+		_, _ = res.Write(s.jsonResponse(DataGetResponse{Response{0, "OK", d}, c}))
+		s.logger.Printf("Data with uid %s has been presented", uid)
+		return
+	}
+
+	http.Error(res, "Bad request", http.StatusBadRequest)
 }
 
 func (s *WebServer) Shutdown() {
 	ctx := context.Background()
 	s.logger.Printf("Shutting down the web server")
 	_ = s.server.Shutdown(ctx)
+}
+
+func (s *WebServer) jsonResponse(d interface{}) []byte {
+	b, err := json.Marshal(d)
+	if err != nil {
+		s.logger.Printf("ERROR Can't create a JSON response: %v", err)
+		return nil
+	}
+	return b
+}
+
+func (s *WebServer) readBody(req *http.Request) ([]byte, error) {
+	b := bytes.NewBuffer(make([]byte, 0))
+	if req.ContentLength > s.maxRequestBody {
+		s.logger.Printf("Request body length greather then %d (maxRequestBody)\n", s.maxRequestBody)
+		return nil, errors.New("Body is too large")
+	}
+
+	_, err := b.ReadFrom(io.LimitReader(req.Body, req.ContentLength))
+
+	if err != nil {
+		s.logger.Printf("Can't read request body %v\n", err)
+		return nil, errors.New("Body read error")
+	}
+	_ = req.Body.Close()
+
+	return b.Bytes(), nil
+}
+
+func (s *WebServer) readBodyAsJson(req *http.Request, j interface{}) error {
+	b, err := s.readBody(req)
+	if err != nil {
+		return err
+	}
+	err = json.Unmarshal(b, j)
+	if err != nil {
+		s.logger.Printf("Can't parse json from request body %v\n", err)
+	}
+	return errors.New("JSON error")
+}
+
+func (s *WebServer) log() {
+
 }
