@@ -9,6 +9,7 @@ import (
 	"io"
 	"log"
 	"net/http"
+	"strconv"
 	"time"
 )
 
@@ -21,6 +22,7 @@ type Response struct {
 type DataGetResponse struct {
 	Response
 	CreatedAt time.Time `json:"createdAt"`
+	Ttl       uint      `json:"ttl"`
 }
 
 type DataPostResponse struct {
@@ -41,7 +43,7 @@ type Opts struct {
 }
 
 type DataStorage interface {
-	Get(uid string) (payload interface{}, createdAt time.Time, err error)
+	Get(uid string) (payload interface{}, createdAt time.Time, ttl time.Duration, err error)
 	Put(uid string, payload interface{}, ttl *time.Duration) error
 }
 
@@ -94,15 +96,22 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		var d interface{}
-		err := s.readBodyAsJson(req, d)
+		err := s.readBodyAsJson(req, &d)
 		if err != nil {
 			http.Error(res, "Wrong request data", http.StatusBadRequest)
 			return
 		}
 
+		var ttl *time.Duration
+		v, err := strconv.Atoi(req.FormValue("ttl"))
+		if err == nil {
+			d := time.Duration(v)
+			ttl = &d
+		}
+
 		//store data
 		uid := s.uidGenerator.New()
-		err = s.ds.Put(uid, d, nil)
+		err = s.ds.Put(uid, d, ttl)
 		if err != nil {
 			s.logger.Printf("Can't store data into the datastorage: %v", err)
 			http.Error(res, "Internal error", http.StatusInternalServerError)
@@ -120,13 +129,13 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		d, c, err := s.ds.Get(uid)
+		d, c, ttl, err := s.ds.Get(uid)
 		if err != nil {
 			_, _ = res.Write(s.jsonResponse(errNFound))
 			return
 		}
 
-		_, _ = res.Write(s.jsonResponse(DataGetResponse{Response{0, "OK", d}, c}))
+		_, _ = res.Write(s.jsonResponse(DataGetResponse{Response{0, "OK", d}, c, uint(ttl / time.Second)}))
 		s.logger.Printf("Data with uid %s has been presented", uid)
 		return
 	}
@@ -167,7 +176,7 @@ func (s *WebServer) readBody(req *http.Request) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *WebServer) readBodyAsJson(req *http.Request, j interface{}) error {
+func (s *WebServer) readBodyAsJson(req *http.Request, j *interface{}) error {
 	b, err := s.readBody(req)
 	if err != nil {
 		return err
@@ -175,8 +184,9 @@ func (s *WebServer) readBodyAsJson(req *http.Request, j interface{}) error {
 	err = json.Unmarshal(b, j)
 	if err != nil {
 		s.logger.Printf("Can't parse json from request body %v\n", err)
+		return errors.New("JSON error")
 	}
-	return errors.New("JSON error")
+	return nil
 }
 
 func (s *WebServer) log() {

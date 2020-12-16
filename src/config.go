@@ -30,6 +30,10 @@ type Config struct {
 		Path string `default:"./tmpl"`
 	}
 
+	Data struct {
+		Path string `default:"./data"`
+	}
+
 	Logs struct {
 		Ftp             string `default:"logs/ftp.log"`
 		FtpNoConsole    bool   `default:"false"`

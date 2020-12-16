@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"ftpdts/src/storage"
 	"ftpdts/src/webserver"
 	"github.com/starshiptroopers/ftpdt"
 	"github.com/starshiptroopers/ftpdt/datastorage"
@@ -24,11 +25,6 @@ func main() {
 	loggerHttp := logInit(config.Logs.Http, !config.Logs.HttpNoConsole)
 	logger := logInit(config.Logs.Ftpdts, !config.Logs.FtpdtsNoConsole)
 
-	ts := tmplstorage.New(config.Templates.Path)
-
-	datastorage.DefaultCacheTTL = time.Second * time.Duration(config.Cache.DataTTL)
-	ds := datastorage.NewMemoryDataStorage()
-
 	ug := uidgenerator.New(
 		&uidgenerator.Cfg{
 			Alfa:      "1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ",
@@ -36,6 +32,25 @@ func main() {
 			Validator: "[0-9a-zA-Z]{32}",
 		},
 	)
+
+	ts := tmplstorage.New(config.Templates.Path)
+
+	datastorage.DefaultCacheTTL = time.Second * time.Duration(config.Cache.DataTTL)
+	memoryDs := datastorage.NewMemoryDataStorage()
+	fsDs := storage.NewFsDataStorage(config.Data.Path, ug)
+
+	var forever = time.Duration(0)
+	var cnt = 0
+	err = fsDs.Pass(func(uid string, createdAt time.Time, data interface{}) {
+		if err := memoryDs.Put(uid, data, &forever); err != nil {
+			panic(fmt.Errorf("something wrong with loading persistent data into the memory cache: %v", err))
+		}
+		cnt++
+	})
+	if err != nil {
+		panic(fmt.Errorf("can't initialize the data persistent storage: %v", err))
+	}
+	logger.Printf("%d persistent data records has been loaded into the data memory cache", cnt)
 
 	ftpOpts := &core.ServerOpts{
 		Port:     int(config.Ftp.Port),
@@ -46,7 +61,7 @@ func main() {
 		&ftpdt.Opts{
 			FtpOpts:         ftpOpts,
 			TemplateStorage: ts,
-			DataStorage:     ds,
+			DataStorage:     memoryDs,
 			UidGenerator:    ug,
 			LogWriter:       loggerFtp.Writer(),
 			LogFtpDebug:     false,
@@ -54,10 +69,12 @@ func main() {
 	)
 
 	webServer := webserver.New(webserver.Opts{
-		Port:        config.Http.Port,
-		Host:        config.Http.Host,
-		DataStorage: ds,
-		Logger:      loggerHttp,
+		Port:           config.Http.Port,
+		Host:           config.Http.Host,
+		DataStorage:    storage.NewDataStorage(memoryDs, fsDs),
+		Logger:         loggerHttp,
+		UidGenerator:   ug,
+		MaxRequestBody: config.Http.MaxRequestBody,
 	})
 
 	err = ServiceStartup(ftpd.ListenAndServe, time.Millisecond*500)
@@ -71,7 +88,7 @@ func main() {
 	}
 
 	uid := ug.New()
-	_ = ds.Put(uid,
+	_ = memoryDs.Put(uid,
 		&struct {
 			Title   string
 			Caption string
