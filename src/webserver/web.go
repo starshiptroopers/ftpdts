@@ -27,12 +27,12 @@ type Response struct {
 type DataGetResponse struct {
 	Response
 	CreatedAt time.Time `json:"createdAt"`
-	Ttl       uint      `json:"ttl"`
+	TTL       uint      `json:"ttl"`
 }
 
 type DataPostResponse struct {
 	Response
-	Uid string `json:"uid"`
+	UID string `json:"uid"`
 }
 
 var errNFound = Response{10, "Not found", nil}
@@ -43,7 +43,7 @@ type Opts struct {
 	Host           string
 	MaxRequestBody int64
 	DataStorage    DataStorage //data storage
-	UidGenerator   UID
+	UIDGenerator   UID
 	Logger         *log.Logger //Where log will be written to (default to stdout)
 }
 
@@ -76,7 +76,7 @@ func New(o Opts) *WebServer {
 		o.DataStorage,
 		o.Port,
 		o.MaxRequestBody,
-		o.UidGenerator,
+		o.UIDGenerator,
 		&http.Server{
 			Addr:    fmt.Sprintf("%s:%d", o.Host, o.Port),
 			Handler: &mux,
@@ -101,7 +101,7 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 		var d interface{}
-		err := s.readBodyAsJson(req, &d)
+		err := s.readBodyAsJSON(req, &d)
 		if err != nil {
 			http.Error(res, "wrong request data", http.StatusBadRequest)
 			return
@@ -181,7 +181,7 @@ func (s *WebServer) readBody(req *http.Request) ([]byte, error) {
 	return b.Bytes(), nil
 }
 
-func (s *WebServer) readBodyAsJson(req *http.Request, j *interface{}) error {
+func (s *WebServer) readBodyAsJSON(req *http.Request, j *interface{}) error {
 	b, err := s.readBody(req)
 	if err != nil {
 		return err
@@ -192,8 +192,4 @@ func (s *WebServer) readBodyAsJson(req *http.Request, j *interface{}) error {
 		return errors.New("JSON error")
 	}
 	return nil
-}
-
-func (s *WebServer) log() {
-
 }

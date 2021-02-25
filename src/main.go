@@ -52,15 +52,15 @@ func main() {
 		panic(err)
 	}
 
-	loggerFtp := logInit(config.Logs.Ftp, !config.Logs.FtpNoConsole)
-	loggerHttp := logInit(config.Logs.Http, !config.Logs.HttpNoConsole)
+	loggerFTP := logInit(config.Logs.FTP, !config.Logs.FTPNoConsole)
+	loggerHTTP := logInit(config.Logs.HTTP, !config.Logs.HTTPNoConsole)
 	logger := logInit(config.Logs.Ftpdts, !config.Logs.FtpdtsNoConsole)
 
 	ug := uidgenerator.New(
 		&uidgenerator.Cfg{
-			Alfa:      config.Uid.Chars,
-			Format:    config.Uid.Format,
-			Validator: config.Uid.ValidatorRegexp,
+			Alfa:      config.UID.Chars,
+			Format:    config.UID.Format,
+			Validator: config.UID.ValidatorRegexp,
 		},
 	)
 
@@ -86,8 +86,8 @@ func main() {
 	logger.Printf("%d persistent data records has been loaded into the data memory cache", cnt)
 
 	ftpOpts := &core.ServerOpts{
-		Port:     int(config.Ftp.Port),
-		Hostname: config.Ftp.Host,
+		Port:     int(config.FTP.Port),
+		Hostname: config.FTP.Host,
 	}
 
 	ftpd := ftpdt.New(
@@ -96,18 +96,18 @@ func main() {
 			TemplateStorage: ts,
 			DataStorage:     memoryDs,
 			UidGenerator:    ug,
-			LogWriter:       loggerFtp.Writer(),
+			LogWriter:       loggerFTP.Writer(),
 			LogFtpDebug:     false,
 		},
 	)
 
 	webServer := webserver.New(webserver.Opts{
-		Port:           config.Http.Port,
-		Host:           config.Http.Host,
+		Port:           config.HTTP.Port,
+		Host:           config.HTTP.Host,
 		DataStorage:    storage.NewDataStorage(memoryDs, fsDs),
-		Logger:         loggerHttp,
-		UidGenerator:   ug,
-		MaxRequestBody: config.Http.MaxRequestBody,
+		Logger:         loggerHTTP,
+		UIDGenerator:   ug,
+		MaxRequestBody: config.HTTP.MaxRequestBody,
 	})
 
 	err = ServiceStartup(ftpd.ListenAndServe, time.Millisecond*500)
@@ -122,29 +122,29 @@ func main() {
 
 	//test data
 	/*
-		uid := ug.New()
-		_ = memoryDs.Put(uid,
-			&struct {
-				Title   string
-				Caption string
-				Url     string
-			}{"Title", "Caption", "https://starshiptroopers.dev"},
-			nil,
-		)
+			uid := ug.New()
+			_ = memoryDs.Put(uid,
+				&struct {
+					Title   string
+					Caption string
+					Url     string
+				}{"Title", "Caption", "https://starshiptroopers.dev"},
+				nil,
+			)
 
-		logger.Printf("Data has been stored into the storage with uid: %s", uid)
-	/*
+			logger.Printf("Data has been stored into the storage with uid: %s", uid)
+		/*
 
 	*/
 	//waiting for the stop signal
-	ch := make(chan os.Signal)
-	signal.Notify(ch, os.Interrupt, os.Kill)
-	select {
-	case <-ch:
-		_ = ftpd.Shutdown()
-		webServer.Shutdown()
-		fmt.Printf("\nThe server is shut down")
-	}
+	ch := make(chan os.Signal, 1)
+	signal.Notify(ch, os.Interrupt)
+
+	<-ch
+	_ = ftpd.Shutdown()
+	webServer.Shutdown()
+	fmt.Printf("\nThe server is shut down")
+
 }
 
 //starts the service (f func) as a gorutine and wait waitTimeout to service became ready

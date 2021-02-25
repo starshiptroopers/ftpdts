@@ -37,7 +37,8 @@ func (d *DataStorage) Get(uid string) (payload interface{}, createdAt time.Time,
 }
 
 //put data into the storage
-//ttl isn't supported and ignored here
+//data is stored into memory storage with Time-To-Live = ttl
+//data also will be stored into the persistent storage if ttl == ttlForever
 func (d *DataStorage) Put(uid string, payload interface{}, ttl *time.Duration) error {
 	if ttl != nil && *ttl == ttlForever {
 		if err := d.pds.Put(uid, payload, nil); err != nil {

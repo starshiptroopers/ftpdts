@@ -15,13 +15,13 @@ var (
 )
 
 type Config struct {
-	Http struct {
+	HTTP struct {
 		Port           uint   `default:"2001"`
 		Host           string `default:"127.0.0.1"`
 		MaxRequestBody int64  `default:"1024"`
 	}
 
-	Ftp struct {
+	FTP struct {
 		Port uint   `default:"2000"`
 		Host string `default:"127.0.0.1"`
 	}
@@ -35,10 +35,10 @@ type Config struct {
 	}
 
 	Logs struct {
-		Ftp             string `default:"logs/ftp.log"`
-		FtpNoConsole    bool   `default:"false"`
-		Http            string `default:"logs/http.log"`
-		HttpNoConsole   bool   `default:"false"`
+		FTP             string `default:"logs/ftp.log"`
+		FTPNoConsole    bool   `default:"false"`
+		HTTP            string `default:"logs/http.log"`
+		HTTPNoConsole   bool   `default:"false"`
 		Ftpdts          string `default:"logs/ftpdts.log"`
 		FtpdtsNoConsole bool   `default:"false"`
 	}
@@ -47,7 +47,7 @@ type Config struct {
 		DataTTL uint `default:"86400"`
 	}
 
-	Uid struct {
+	UID struct {
 		Chars           string `default:"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"`
 		Format          string `default:"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"`
 		ValidatorRegexp string `default:"[0-9a-zA-Z]{32}"`

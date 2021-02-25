@@ -12,7 +12,7 @@ func logInit(filename string, console bool) *log.Logger {
 	var err error
 
 	if filename != "" {
-		f, err = os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm)
+		f, err = os.OpenFile(filename, os.O_CREATE|os.O_APPEND|os.O_WRONLY, os.ModePerm) // #nosec G304
 		if err != nil {
 			fmt.Printf("Can't open the log file: %v\n", err)
 			console = true
