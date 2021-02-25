@@ -46,6 +46,12 @@ type Config struct {
 	Cache struct {
 		DataTTL uint `default:"86400"`
 	}
+
+	Uid struct {
+		Chars           string `default:"1234567890abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ"`
+		Format          string `default:"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"`
+		ValidatorRegexp string `default:"[0-9a-zA-Z]{32}"`
+	}
 }
 
 func viperConfig(cPath string, cName string, cType string, envPrefix string, config interface{}) (v *viper.Viper, err error) {

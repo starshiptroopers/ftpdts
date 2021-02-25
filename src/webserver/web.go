@@ -1,3 +1,8 @@
+// Copyright 2021 The Starship Troopers Authors. All rights reserved.
+// Use of this source code is governed by a MIT-style
+// license that can be found in the LICENSE file.
+
+//webserver with rest api endpoints
 package webserver
 
 import (
@@ -32,7 +37,7 @@ type DataPostResponse struct {
 
 var errNFound = Response{10, "Not found", nil}
 
-// Opts is a ftpdt options
+//webserver options
 type Opts struct {
 	Port           uint
 	Host           string
@@ -83,7 +88,7 @@ func New(o Opts) *WebServer {
 }
 
 func (s *WebServer) Run() error {
-	s.logger.Printf("Starting the web server at %s", s.server.Addr)
+	s.logger.Printf("WEB server has been started at %s", s.server.Addr)
 	return s.server.ListenAndServe()
 }
 
@@ -92,13 +97,13 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 	res.Header().Set("Content-Type", "application/json")
 	if req.Method == http.MethodPost {
 		if res.Header().Get("Content-type") != "application/json" {
-			http.Error(res, "Wrong content-type (not a json)", http.StatusBadRequest)
+			http.Error(res, "wrong content-type (not a json)", http.StatusBadRequest)
 			return
 		}
 		var d interface{}
 		err := s.readBodyAsJson(req, &d)
 		if err != nil {
-			http.Error(res, "Wrong request data", http.StatusBadRequest)
+			http.Error(res, "wrong request data", http.StatusBadRequest)
 			return
 		}
 
