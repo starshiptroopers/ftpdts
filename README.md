@@ -8,18 +8,18 @@ The main reason the ftp is using in this trick is because the ftp protocol is ha
 
 Server read the configuration from ftpdts.ini file, templates is stored at ./tmpl folder by default, persistent data storage is at ./data folder
 
-#####Templates:
+##### Templates:
 default.tmpl is the default template file. It used when the ftp client requests the file from the root folder, for example with url: ftp://server-name/UID.html
 You can customize your templates and place them into templates folder with a different filename. 
 For example, we place a template with name test.tmpl into the templates folder, 
 then we can use the url ftp://server/test/UID.html to download the file created from this template and populated with UID data set
 
-#####Datasets:
+##### Datasets:
 You can create your own dataset and place the file into the ./data folder. Dataset file name must be in UID format and file must contain a JSON
 Also you can post dataset directly to the webAPI endpoint. It will be stored into the memory cache or persistent storage.
 
-###### WebAPI endpoints:
-`
+##### WebAPI endpoints:
+```
 POST:
   url: /data?ttl=n
   ttl = time to live in seconds the data will be stored in the memory storage, if ttl = 0 data will be stored into the persistent storage, if ttl is not defined data will be stored into the memory storage with default ttl
@@ -43,9 +43,10 @@ POST:
     		"createdAt": datetime,
     		"ttl": 0
 		}
-`
+```
 
-#####Usage example
+##### Usage example:
+
     1. Start the service: docker-compose up
     2. Do the POST request to http://localhost:2000/data with curl
        `curl --header "Content-Type: application/json" --request POST --data '{"Title":"Redirect page","Caption":"This is a redirection page","Url": "https://starshiptroopers.dev"}' http://localhost:2000/data`
