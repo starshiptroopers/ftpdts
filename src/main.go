@@ -22,6 +22,47 @@
 // Datasets:
 // You can create your default dataset and place them into the ./data folder as file where name is in UID format. The file must contain a JSON
 // or you can post dataset directly to the rest api endpoint and it will be stored into the memory cache and persistent storage
+//
+// WebAPI endpoints:
+// POST:
+//  url: /data?ttl=n
+//  ttl = time to live in seconds the data will be stored in the memory storage, if ttl = 0 data will be stored into the persistent storage, if ttl is not defined data will be stored into the memory storage with default ttl
+//  body: data to fill into the template in JSON format
+//  response:
+//  	{
+//		   "code": 0,    		// error code
+//    	   "message": "OK",		// error message
+// 		   "uid": "xxxxxxxxxxxxxxxxxxxxxxxx"  // uid the data was stored with
+//  	}
+//
+// GET:
+//  url: /data?uid=xxxxxxx...xx
+//  response:
+//  	{
+//		    "code": 0,
+//		    "message": "OK",
+//		    "data": {
+//				....
+//			},
+//    		"createdAt": datetime,
+//    		"ttl": 0
+//		}
+//
+// Usage example
+//    1. Start the service: docker-compose up
+//    2. Do the POST request to http://localhost:2000/data with curl
+//       curl --header "Content-Type: application/json" --request POST --data '{"Title":"Redirect page","Caption":"This is a redirection page","Url": "https://starshiptroopers.dev"}' http://localhost:2000/data
+//       You will get the data {"code":0,"message":"OK","uid":"Xmnw48xJKpolFYwLn7a0wetEdsTKym1M"}
+//    3. Get the page with curl
+//		 curl ftp://localhost/Xmnw48xJKpolFYwLn7a0wetEdsTKym1M.html
+//		 You will get the html page with content
+//			<!DOCTYPE html>
+//			<html lang="en">
+//			<head><title>Redirect page</title></head>
+//			<body><h1>This is a redirection page</h1> <script> window.location.href = "https://starshiptroopers.dev" </script> </body>
+//			</html>
+//
+//
 
 package main
 
@@ -44,7 +85,7 @@ var gitTag, gitCommit, gitBranch string
 func main() {
 
 	if gitTag != "" {
-		fmt.Printf("Ftpdts service version %s (%s, %s)", gitTag, gitBranch, gitCommit)
+		fmt.Printf("Ftpdts service version %s (%s, %s)\n", gitTag, gitBranch, gitCommit)
 	}
 
 	config, err := LoadConfig()
@@ -86,8 +127,9 @@ func main() {
 	logger.Printf("%d persistent data records has been loaded into the data memory cache", cnt)
 
 	ftpOpts := &core.ServerOpts{
-		Port:     int(config.FTP.Port),
-		Hostname: config.FTP.Host,
+		Port:         int(config.FTP.Port),
+		Hostname:     config.FTP.Host,
+		PassivePorts: config.FTP.PassivePorts,
 	}
 
 	ftpd := ftpdt.New(

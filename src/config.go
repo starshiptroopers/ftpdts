@@ -22,8 +22,9 @@ type Config struct {
 	}
 
 	FTP struct {
-		Port uint   `default:"2000"`
-		Host string `default:"127.0.0.1"`
+		Port         uint   `default:"2000"`
+		Host         string `default:"127.0.0.1"`
+		PassivePorts string `default:"32000-32010"`
 	}
 
 	Templates struct {

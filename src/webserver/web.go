@@ -19,15 +19,15 @@ import (
 )
 
 type Response struct {
-	Code    uint        `json:"code"`
-	Message string      `json:"message"`
-	Data    interface{} `json:"data"`
+	Code    uint   `json:"code"`
+	Message string `json:"message"`
 }
 
 type DataGetResponse struct {
 	Response
-	CreatedAt time.Time `json:"createdAt"`
-	TTL       uint      `json:"ttl"`
+	Data      interface{} `json:"data"`
+	CreatedAt time.Time   `json:"createdAt"`
+	TTL       uint        `json:"ttl"`
 }
 
 type DataPostResponse struct {
@@ -35,7 +35,7 @@ type DataPostResponse struct {
 	UID string `json:"uid"`
 }
 
-var errNFound = Response{10, "Not found", nil}
+var errNFound = Response{10, "Not found"}
 
 //webserver options
 type Opts struct {
@@ -110,7 +110,7 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 		var ttl *time.Duration
 		v, err := strconv.Atoi(req.FormValue("ttl"))
 		if err == nil {
-			d := time.Duration(v)
+			d := time.Second * time.Duration(v)
 			ttl = &d
 		}
 
@@ -122,7 +122,7 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 			http.Error(res, "Internal error", http.StatusInternalServerError)
 			return
 		}
-		_, _ = res.Write(s.jsonResponse(DataPostResponse{Response{0, "OK", nil}, uid}))
+		_, _ = res.Write(s.jsonResponse(DataPostResponse{Response{0, "OK"}, uid}))
 		s.logger.Printf("New data has been stored into the storage with uid %s", uid)
 		return
 	}
@@ -140,7 +140,7 @@ func (s *WebServer) dataRequest(res http.ResponseWriter, req *http.Request) {
 			return
 		}
 
-		_, _ = res.Write(s.jsonResponse(DataGetResponse{Response{0, "OK", d}, c, uint(ttl / time.Second)}))
+		_, _ = res.Write(s.jsonResponse(DataGetResponse{Response{0, "OK"}, d, c, uint(ttl / time.Second)}))
 		s.logger.Printf("Data with uid %s has been presented", uid)
 		return
 	}
@@ -166,7 +166,7 @@ func (s *WebServer) jsonResponse(d interface{}) []byte {
 func (s *WebServer) readBody(req *http.Request) ([]byte, error) {
 	b := bytes.NewBuffer(make([]byte, 0))
 	if req.ContentLength > s.maxRequestBody {
-		s.logger.Printf("Request body length greather then %d (maxRequestBody)\n", s.maxRequestBody)
+		s.logger.Printf("Request body length greater then %d (maxRequestBody)\n", s.maxRequestBody)
 		return nil, errors.New("Body is too large")
 	}
 

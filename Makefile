@@ -34,5 +34,28 @@ lint: dep ## Lint the source files
 
 test: dep ## Run tests
 	go test -race -p 1 -timeout 300s -coverprofile=.test_coverage.txt ./... && \
-    	go tool cover -func=.test_coverage.txt | tail -n1 | awk '{print "Total test coverage: " $$3}'
+	go tool cover -func=.test_coverage.txt | tail -n1 | awk '{print "Total test coverage: " $$3}'
 	@rm .test_coverage.txt
+
+docker-build: build ## Build docker image
+	docker build -t starshiptroopers/${PROGRAM_NAME}:latest -t starshiptroopers/${PROGRAM_NAME}:${TAG} .
+	docker image prune --force --filter label=stage=intermediate
+
+docker-image: docker-build ## Save docker image to file
+	rm -f ./build/*.docker.tar
+	docker save -o build/${PROGRAM_NAME}:${TAG}.docker.tar starshiptroopers/${PROGRAM_NAME}:${TAG}
+
+docker-app: docker-image ## Build application tar with docker image
+	mkdir -p ./build/config
+	mkdir -p ./build/tmpl
+	mkdir -p ./build/logs
+	cp *.ini ./build/config/
+	cp tmpl/default.tmpl ./build/tmpl
+	cp docker-compose.yml ./build/
+	echo "Load the docker image:\n> docker load -i ${PROGRAM_NAME}:${TAG}.docker.tar\nRun the container with:\n> docker-compose up" > readme.txt
+	mv build ${PROGRAM_NAME}-${TAG}
+	tar -c ${PROGRAM_NAME}-${TAG} | gzip > bin/${PROGRAM_NAME}-${TAG}.tar.gz
+	mv ${PROGRAM_NAME}-${TAG} build
+	echo "Application archive has been saved to bin/${PROGRAM_NAME}-${TAG}.tar.gz"
+
+
