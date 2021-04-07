@@ -26,23 +26,23 @@ POST:
   body: data to fill into the template in JSON format
   response:
   	{
-		   "code": 0,    		// error code
+	   "code": 0,    		// error code
     	   "message": "OK",		// error message
- 		   "uid": "xxxxxxxxxxxxxxxxxxxxxxxx"  // uid the data was stored with
+ 	   "uid": "xxxxxxxxxxxxxxxxxxxxxxxx"  // uid the data was stored with
   	}
 
  GET:
   url: /data?uid=xxxxxxx...xx
   response:
   	{
-		    "code": 0,
-		    "message": "OK",
-		    "data": {
-				....
-			},
-    		"createdAt": datetime,
-    		"ttl": 0
-		}
+	    "code": 0,
+	    "message": "OK",
+	    "data": {
+		....
+	    },
+    	    "createdAt": datetime,
+    	    "ttl": 0
+	}
 ```
 
 ##### Usage example:
