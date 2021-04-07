@@ -49,11 +49,11 @@ POST:
 
     1. Start the service: docker-compose up
     2. Do the POST request to http://localhost:2000/data with curl
-       `curl --header "Content-Type: application/json" --request POST --data '{"Title":"Redirect page","Caption":"This is a redirection page","Url": "https://starshiptroopers.dev"}' http://localhost:2000/data`
+       curl --header "Content-Type: application/json" --request POST --data '{"Title":"Redirect page","Caption":"This is a redirection page","Url": "https://starshiptroopers.dev"}' http://localhost:2000/data
        You will get the data {"code":0,"message":"OK","uid":"Xmnw48xJKpolFYwLn7a0wetEdsTKym1M"}
-    3. Get the page with curl
-		   `curl ftp://localhost/Xmnw48xJKpolFYwLn7a0wetEdsTKym1M.html
-		 You will get the html page with content
+    3. Use UID to get the file with curl
+		   curl ftp://localhost/Xmnw48xJKpolFYwLn7a0wetEdsTKym1M.html
+		 You will get the html page with content:
 ```
       <!DOCTYPE html>
 			<html lang="en">
