@@ -43,7 +43,7 @@ docker-build: build ## Build docker image
 
 docker-image: docker-build ## Save docker image to file
 	rm -f ./build/*.docker.tar
-	docker save -o build/${PROGRAM_NAME}:${TAG}.docker.tar starshiptroopers/${PROGRAM_NAME}:${TAG}
+	docker save -o build/${PROGRAM_NAME}:${TAG}.docker.tar starshiptroopers/${PROGRAM_NAME}:latest
 
 docker-app: docker-image ## Build application tar with docker image
 	mkdir -p ./build/config
