@@ -1,8 +1,9 @@
 # ftpdts
-Ftpdts service do a real-time file generation and exposes them as downloadable FTP files. Files are generated from templates on the fly and can be filled with user data. 
-Ftpdts has the built-in FTP server based on ftpdt (goftp/server), and the simple webapi to put/get user data.
+Ftpdts service do a real-time file generation and exposes them as downloadable FTP files. Files are generated from templates on the fly and can be filled with any user data. Ftpdts has the built-in FTP server based on ftpdt (goftp/server), and the simple webapi to put/get user data.
 
 It was originally designed to implement the trick of escaping to the IOS default browser from Facebook, Instagram, webkit in-app browsers.
+See real usage example: https://github.com/starshiptroopers/escfbb
+
 Ftp is used as an intermediate gateway to download the html file with redirect to real web site.
 The main reason the ftp is using in this trick is because the ftp protocol is handled with Safary by default. Opening a ftp link in a webkit lead to starting the Safari. At the moment of developing this library it was the only way to escape from Facebook browser to IOS default browser.
 
