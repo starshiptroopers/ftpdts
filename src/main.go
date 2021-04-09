@@ -130,6 +130,7 @@ func main() {
 		Port:         int(config.FTP.Port),
 		Hostname:     config.FTP.Host,
 		PassivePorts: config.FTP.PassivePorts,
+		PublicIP:     config.FTP.PublicIP,
 	}
 
 	ftpd := ftpdt.New(
@@ -139,7 +140,7 @@ func main() {
 			DataStorage:     memoryDs,
 			UidGenerator:    ug,
 			LogWriter:       loggerFTP.Writer(),
-			LogFtpDebug:     false,
+			LogFtpDebug:     config.FTP.DebugMode,
 		},
 	)
 

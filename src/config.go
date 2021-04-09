@@ -25,6 +25,8 @@ type Config struct {
 		Port         uint   `default:"2000"`
 		Host         string `default:"127.0.0.1"`
 		PassivePorts string `default:"32000-32010"`
+		DebugMode    bool   `default:"false"`
+		PublicIP     string
 	}
 
 	Templates struct {

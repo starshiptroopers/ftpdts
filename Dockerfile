@@ -10,8 +10,8 @@ FROM alpine:latest as scratch
 RUN apk --no-cache add ca-certificates
 WORKDIR /opt/ftpdts
 COPY bin/ftpdts ./ftpdts
-COPY *.ini ./configs/
+COPY *.ini ./config/
 COPY tmpl/*.tmpl /tmpl/
 VOLUME /opt/ftpdts/data
-RUN ln -s configs/ftpdts.ini ftpdts.ini
+RUN ln -s config/ftpdts.ini ftpdts.ini
 CMD ["./ftpdts"]
